@@ -1,0 +1,74 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  UV_FROZEN: "1"
+
+jobs:
+  quality:
+    name: Lint, types, boundaries
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+          cache-dependency-glob: uv.lock
+
+      - name: Sync environment
+        run: uv sync
+
+      # Steps below use `if: always()` so one failure does not mask the others —
+      # a red build should report every problem, not just the first.
+      - name: Ruff (lint)
+        if: always()
+        run: uv run ruff check --output-format=github .
+
+      - name: Ruff (format)
+        if: always()
+        run: uv run ruff format --check .
+
+      - name: MyPy (strict)
+        if: always()
+        run: uv run mypy
+
+      - name: Engine purity boundary (ADR-0006)
+        if: always()
+        run: uv run lint-imports
+
+      - name: Append-only inventories (ADR-0014)
+        if: always()
+        run: uv run python -m tools.inventory_lock check
+
+      - name: Corpus guards — licence, autophagy, holdout (ADR-0019)
+        if: always()
+        run: uv run python -m tools.check_corpus
+
+  test:
+    name: Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+          cache-dependency-glob: uv.lock
+
+      - name: Sync environment
+        run: uv sync
+
+      - name: Pytest
+        run: uv run pytest --cov=engine --cov=services --cov=tools --cov-report=term-missing

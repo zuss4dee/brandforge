@@ -1,0 +1,51 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+.coverage
+coverage.xml
+htmlcov/
+.mypy_cache/
+.ruff_cache/
+.import_linter_cache/
+*.egg-info/
+dist/
+build/
+
+# Node
+node_modules/
+.next/
+out/
+.turbo/
+*.tsbuildinfo
+
+# Environment
+.env
+.env.*
+!.env.example
+
+# Data artifacts — never commit corpora snapshots, zone dumps, or built filters.
+# Exception: data/corpus/artifacts/.gitkeep is tracked so check_corpus can tell
+# "misconfigured path" from "nothing built yet" (services/corpus/config.py).
+# Git cannot re-include a file whose parent is excluded, hence the ladder.
+data/*
+!data/corpus/
+data/corpus/*
+!data/corpus/artifacts/
+data/corpus/artifacts/*
+!data/corpus/artifacts/.gitkeep
+*.zone
+*.zone.gz
+*.bloom
+corpora/generated/
+
+# Local tool state
+.claude/settings.local.json
+
+# OS / editor
+.DS_Store
+.idea/
+.vscode/
+*.swp

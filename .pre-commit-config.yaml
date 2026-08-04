@@ -1,0 +1,75 @@
+# Pre-commit runs the fast half of CI locally. The two custom hooks at the
+# bottom are the ones that matter most — they guard failure modes that produce
+# no symptom (ADR-0006, ADR-0014).
+default_install_hook_types: [pre-commit, commit-msg]
+
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-yaml
+      - id: check-toml
+      - id: check-json
+      - id: check-merge-conflict
+      - id: check-case-conflict
+      - id: check-added-large-files
+        args: [--maxkb=512]
+      - id: detect-private-key
+      - id: no-commit-to-branch
+        args: [--branch, main]
+
+  - repo: local
+    hooks:
+      # Ruff runs from the project environment, NOT from ruff-pre-commit.
+      # A pinned hook version drifts from the version `uv sync` resolves, and
+      # the two then format the same file differently — `make check` passes,
+      # the hook reformats, the next `make check` reverts it, forever. One ruff
+      # is the only version of this that terminates.
+      - id: ruff
+        name: ruff (project version)
+        entry: uv run ruff check --fix
+        language: system
+        types: [python]
+
+      - id: ruff-format
+        name: ruff-format (project version)
+        entry: uv run ruff format
+        language: system
+        types: [python]
+
+      - id: mypy
+        name: mypy (strict)
+        entry: uv run mypy
+        language: system
+        types: [python]
+        pass_filenames: false
+
+      - id: import-linter
+        name: engine purity boundary (ADR-0006)
+        entry: uv run lint-imports
+        language: system
+        types: [python]
+        pass_filenames: false
+
+      - id: inventory-lock
+        name: append-only inventories (ADR-0014)
+        entry: uv run python -m tools.inventory_lock check
+        language: system
+        files: ^engine/rulesets/
+        pass_filenames: false
+
+      - id: check-corpus
+        name: corpus guards — licence, autophagy, holdout (ADR-0019)
+        entry: uv run python -m tools.check_corpus
+        language: system
+        files: ^(services/corpus/|evals/holdout/|data/corpus/)
+        pass_filenames: false
+
+      - id: pytest-fast
+        name: pytest (excluding slow)
+        entry: uv run pytest -m "not slow"
+        language: system
+        types: [python]
+        pass_filenames: false

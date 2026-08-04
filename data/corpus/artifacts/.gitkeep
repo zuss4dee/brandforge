@@ -1,0 +1,7 @@
+Committed so tools/check_corpus.py can distinguish two states that must never
+be confused:
+
+  directory absent  -> misconfiguration; the guard fails
+  directory empty   -> no corpus built yet; the guard passes
+
+Corpus artifacts themselves are build outputs and stay gitignored.
